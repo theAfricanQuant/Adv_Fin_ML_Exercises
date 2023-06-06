@@ -68,8 +68,7 @@ def getDailyVol(close,span0=100):
         print('adjusting shape of close.loc[df0.index]')
         cut = close.loc[df0.index].shape[0] - close.loc[df0.values].shape[0]
         df0=close.loc[df0.index].iloc[:-cut]/close.loc[df0.values].values-1
-    df0=df0.ewm(span=span0).std().rename('dailyVol')
-    return df0
+    return df0.ewm(span=span0).std().rename('dailyVol')
 # =======================================================
 # Triple-Barrier Labeling Method [3.2]
 def applyPtSlOnT1(close,events,ptSl,molecule):
@@ -110,8 +109,7 @@ def getEvents(close, tEvents, ptSl, trgt, minRet, numThreads,t1=False, side=None
 def addVerticalBarrier(tEvents, close, numDays=1):
     t1=close.index.searchsorted(tEvents+pd.Timedelta(days=numDays))
     t1=t1[t1<close.shape[0]]
-    t1=(pd.Series(close.index[t1],index=tEvents[:t1.shape[0]]))
-    return t1
+    return (pd.Series(close.index[t1],index=tEvents[:t1.shape[0]]))
 
 # =======================================================
 # Labeling for side and size [3.5, 3.8]
@@ -198,7 +196,7 @@ def linParts(numAtoms,numThreads):
 def nestedParts(numAtoms,numThreads,upperTriang=False):
     # partition of atoms with an inner loop
     parts,numThreads_=[0],min(numThreads,numAtoms)
-    for num in range(numThreads_):
+    for _ in range(numThreads_):
         part=1+4*(parts[-1]**2+parts[-1]+numAtoms*(numAtoms+1.)/numThreads_)
         part=(-1+part**.5)/2.
         parts.append(part)
@@ -227,8 +225,7 @@ def mpPandasObj(func,pdObj,numThreads=24,mpBatches=1,linMols=True,**kargs):
 
     jobs=[]
     for i in range(1,len(parts)):
-        job={pdObj[0]:pdObj[1][parts[i-1]:parts[i]],'func':func}
-        job.update(kargs)
+        job = {pdObj[0]:pdObj[1][parts[i-1]:parts[i]],'func':func} | kargs
         jobs.append(job)
     if numThreads==1:out=processJobs_(jobs)
     else: out=processJobs(jobs,numThreads=numThreads)
@@ -258,8 +255,19 @@ def reportProgress(jobNum,numJobs,time0,task):
     msg=[float(jobNum)/numJobs, (time.time()-time0)/60.]
     msg.append(msg[1]*(1/msg[0]-1))
     timeStamp=str(dt.datetime.fromtimestamp(time.time()))
-    msg=timeStamp+' '+str(round(msg[0]*100,2))+'% '+task+' done after '+ \
-        str(round(msg[1],2))+' minutes. Remaining '+str(round(msg[2],2))+' minutes.'
+    msg = (
+        (
+            (
+                f'{timeStamp} {str(round(msg[0] * 100, 2))}% '
+                + task
+                + ' done after '
+                + str(round(msg[1], 2))
+            )
+            + ' minutes. Remaining '
+        )
+        + str(round(msg[2], 2))
+        + ' minutes.'
+    )
     if jobNum<numJobs:sys.stderr.write(msg+'\r')
     else:sys.stderr.write(msg+'\n')
     return
@@ -282,8 +290,7 @@ def expandCall(kargs):
     # Expand the arguments of a callback function, kargs['func']
     func=kargs['func']
     del kargs['func']
-    out=func(**kargs)
-    return out
+    return func(**kargs)
 # =======================================================
 # Pickle Unpickling Objects [20.11]
 def _pickle_method(method):
@@ -341,8 +348,7 @@ def getAvgUniqueness(indM):
     # Average uniqueness from indicator matrix
     c=indM.sum(axis=1) # concurrency
     u=indM.div(c,axis=0) # uniqueness
-    avgU=u[u>0].mean() # avg. uniqueness
-    return avgU
+    return u[u>0].mean()
 # =======================================================
 # return sample from sequential bootstrap [4.5]
 def seqBootstrap(indM,sLength=None):
@@ -378,8 +384,7 @@ def getWeights(d,size):
     for k in range(1,size):
         w_ = -w[-1]/k*(d-k+1)
         w.append(w_)
-    w=np.array(w[::-1]).reshape(-1,1)
-    return w
+    return np.array(w[::-1]).reshape(-1,1)
 
 def getWeights_FFD(d,thres):
 
@@ -617,8 +622,7 @@ def crossValPlot(skf,classifier,X,y):
     mean_fpr = np.linspace(0, 1, 100)
     idx = pd.IndexSlice
     f,ax = plt.subplots(figsize=(10,7))
-    i = 0
-    for train, test in skf.split(X, y):
+    for i, (train, test) in enumerate(skf.split(X, y)):
         probas_ = (classifier.fit(X.iloc[idx[train]], y.iloc[idx[train]])
                    .predict_proba(X.iloc[idx[test]]))
         # Compute ROC curve and area the curve
@@ -629,8 +633,6 @@ def crossValPlot(skf,classifier,X,y):
         aucs.append(roc_auc)
         ax.plot(fpr, tpr, lw=1, alpha=0.3,
                  label='ROC fold %d (AUC = %0.2f)' % (i, roc_auc))
-
-        i += 1
 
     ax.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r',
              label='Luck', alpha=.8)
@@ -711,8 +713,7 @@ def featImpMDA(clf,X,y,cv,sample_weight,t1,pctEmbargo,scoring='neg_log_loss'):
             pred=fit.predict(X1_)
             scr1.loc[i,j]=accuracy_score(y1,pred,sample_weight=w1.values)
     imp=(-scr1).add(scr0,axis=0)
-    if scoring=='neg_log_loss':imp=imp/-scr1
-    else: imp=imp/(1.-scr1)
+    imp = imp/-scr1 if scoring=='neg_log_loss' else imp/(1.-scr1)
     imp=(pd.concat({'mean':imp.mean(),
                     'std':imp.std()*imp.shape[0]**-0.5},
                    axis=1))
@@ -739,8 +740,9 @@ def get_eVec(dot,varThres):
     idx=eVal.argsort()[::-1] # arugments for sorting eVal desc.
     eVal,eVec=eVal[idx],eVec[:,idx]
     #2) only positive eVals
-    eVal=(pd.Series(eVal,index=['PC_'+str(i+1)
-                                for i in range(eVal.shape[0])]))
+    eVal = pd.Series(
+        eVal, index=[f'PC_{str(i + 1)}' for i in range(eVal.shape[0])]
+    )
     eVec=(pd.DataFrame(eVec,index=dot.index,columns=eVal.index))
     eVec=eVec.loc[:,eVal.index]
     #3) reduce dimension, form PCs
@@ -756,8 +758,7 @@ def orthoFeats(dfx,varThres=0.95):
                       index=dfx.columns,
                       columns=dfx.columns))
     eVal,eVec=get_eVec(dot,varThres)
-    dfP=np.dot(dfZ,eVec)
-    return dfP
+    return np.dot(dfZ,eVec)
 
 #=======================================================
 # 8.6 Computation of weighted kendall's tau between feature importance and inverse PCA ranking
@@ -781,8 +782,10 @@ def getTestData(n_features=40,n_informative=10,n_redundant=10,n_samples=10_000):
                           end=pd.datetime.today()))
     trnsX,cont=(pd.DataFrame(trnsX,index=df0),
                 pd.Series(cont,index=df0).to_frame('bin'))
-    df0=['I_'+str(i) for i in range(n_informative)]+['R_'+str(i) for i in range(n_redundant)]
-    df0+=['N_'+str(i) for i in range(n_features-len(df0))]
+    df0 = [f'I_{str(i)}' for i in range(n_informative)] + [
+        f'R_{str(i)}' for i in range(n_redundant)
+    ]
+    df0 += [f'N_{str(i)}' for i in range(n_features-len(df0))]
     trnsX.columns=df0
     cont['w']=1./cont.shape[0]
     cont['t1']=pd.Series(cont.index,index=cont.index)
@@ -842,13 +845,14 @@ def testFunc(n_features=40,n_informative=10,n_redundant=10,n_estimators=1000,
         job['simNum']=job['method']+'_'+job['scoring']+'_'+'%.2f'%job['minWLeaf']+\
         '_'+str(job['max_samples'])
         print(job['simNum'])
-        kargs.update(job)
+        kargs |= job
         imp,oob,oos=featImportance(trnsX=trnsX,cont=cont,**kargs)
         plotFeatImportance(imp=imp,oob=oob,oos=oos,**kargs)
         df0=imp[['mean']]/imp['mean'].abs().sum()
         df0['type']=[i[0] for i in df0.index]
         df0=df0.groupby('type')['mean'].abs().sum()
-        df0.update({'oob':oob,'oos':oos});df0.update(job)
+        df0.update({'oob':oob,'oos':oos})
+        df0.update(job)
         out.append(df0)
     out=(pd.DataFrame(out).sort_values(['method','scoring','minWLeaf','max_samples']))
     out=out['method','scoring','minWLeaf','max_samples','I','R','N','oob','oos']

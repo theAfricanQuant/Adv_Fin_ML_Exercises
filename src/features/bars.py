@@ -93,13 +93,11 @@ def numba_isclose(a,b,rel_tol=1e-09,abs_tol=0.0):
 
 @jit(nopython=True)
 def bt(p0, p1, bs):
-    #if math.isclose((p1 - p0), 0.0, abs_tol=0.001):
-    if numba_isclose((p1-p0),0.0,abs_tol=0.001):
-        b = bs[-1]
-        return b
-    else:
-        b = np.abs(p1-p0)/(p1-p0)
-        return b
+    return (
+        bs[-1]
+        if numba_isclose((p1 - p0), 0.0, abs_tol=0.001)
+        else np.abs(p1 - p0) / (p1 - p0)
+    )
 
 @jit(nopython=True)
 def get_imbalance(t):

@@ -26,8 +26,7 @@ def get_weight_ffd(differencing_amt, threshold, weight_vector_len):
         ctr += 1
         if ctr == weight_vector_len - 1:
             break
-    weights = np.array(weights[::-1]).reshape(-1, 1)
-    return weights
+    return np.array(weights[::-1]).reshape(-1, 1)
 
 
 def frac_diff_ffd(price_series, differencing_amt, threshold=1e-5):
@@ -57,8 +56,10 @@ def frac_diff_ffd(price_series, differencing_amt, threshold=1e-5):
     # apply weights to values
     output = []
     output.extend([0] * width)
-    for i in range(width, len(price_series)):
-        output.append(np.dot(weights.T, price_series[i - width:i + 1])[0])
+    output.extend(
+        np.dot(weights.T, price_series[i - width : i + 1])[0]
+        for i in range(width, len(price_series))
+    )
     return np.array(output)
 
 def compare_adf_stat_with_critical_values(result):
@@ -69,10 +70,7 @@ def compare_adf_stat_with_critical_values(result):
     """
     tstat = abs(next(iter(result[4].items()))[1])
     adf_stat = abs(round(result[0], 3))
-    if adf_stat >= tstat:
-        return True
-    else:
-        return False
+    return adf_stat >= tstat
 
 def compute_differencing_amt(price_series, threshold=1e-5):
     """ Function iterates over the differencing amounts and computes the smallest amt that will make the 

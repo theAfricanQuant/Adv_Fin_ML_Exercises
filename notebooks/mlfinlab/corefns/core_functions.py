@@ -30,15 +30,14 @@ class CoreFunctions:
         :return: (series) of daily volatility value
         """
         print('Calculating daily volatility for dynamic thresholds')
-        
+
         # daily vol re-indexed to close
         df0 = close.index.searchsorted(close.index - pd.Timedelta(days=1))
         df0 = df0[df0 > 0]
         df0 = (pd.Series(close.index[df0 - 1], index=close.index[close.shape[0] - df0.shape[0]:]))
-        
+
         df0 = close.loc[df0.index] / close.loc[df0.values].values - 1  # daily returns
-        df0 = df0.ewm(span=lookback).std()
-        return df0
+        return df0.ewm(span=lookback).std()
 
     @staticmethod
     def get_autocorr(close, lookback=100):
@@ -59,9 +58,7 @@ class CoreFunctions:
         df0 = (pd.Series(close.index[df0 - 1], index=close.index[close.shape[0] - df0.shape[0]:]))
 
         df0 = close.loc[df0.index] / close.loc[df0.values].values - 1  # daily returns
-        # df0 = df0.ewm(span=lookback).autocorr()
-        df0 = df0.rolling(lookback).apply(lambda x: x.autocorr(), raw=False)
-        return df0
+        return df0.rolling(lookback).apply(lambda x: x.autocorr(), raw=False)
 
     @staticmethod
     def get_t_events(raw_price, threshold):
@@ -113,8 +110,7 @@ class CoreFunctions:
                 s_pos = 0
                 t_events.append(i)
 
-        event_timestamps = pd.DatetimeIndex(t_events)
-        return event_timestamps
+        return pd.DatetimeIndex(t_events)
 
     @staticmethod
     def add_vertical_barrier(t_events, close, num_days=1):
@@ -133,8 +129,7 @@ class CoreFunctions:
         """
         t1 = close.index.searchsorted(t_events + pd.Timedelta(days=num_days))
         t1 = t1[t1 < close.shape[0]]
-        t1 = pd.Series(close.index[t1], index=t_events[:t1.shape[0]])  # NaNs at end
-        return t1
+        return pd.Series(close.index[t1], index=t_events[:t1.shape[0]])
 
     @staticmethod
     def apply_pt_sl_on_t1(close, events, pt_sl, molecule):

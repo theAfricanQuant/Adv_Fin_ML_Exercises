@@ -33,22 +33,14 @@ class FinancialFunctions:
         while i + 1 <= df.index[-1]:
             UpMove = df.loc[i + 1, 'high'] - df.loc[i, 'high']
             DoMove = df.loc[i, 'low'] - df.loc[i + 1, 'low']
-            if UpMove > DoMove and UpMove > 0:
-                UpD = UpMove
-            else:
-                UpD = 0
+            UpD = UpMove if UpMove > DoMove and UpMove > 0 else 0
             UpI.append(UpD)
-            if DoMove > UpMove and DoMove > 0:
-                DoD = DoMove
-            else:
-                DoD = 0
+            DoD = DoMove if DoMove > UpMove and DoMove > 0 else 0
             DoI.append(DoD)
-            i = i + 1
+            i += 1
         UpI = pd.Series(UpI)
         DoI = pd.Series(DoI)
         PosDI = pd.Series(UpI.ewm(span=n, min_periods=n).mean())
         NegDI = pd.Series(DoI.ewm(span=n, min_periods=n).mean())
-        RSI = pd.Series(round(PosDI * 100. / (PosDI + NegDI)), name='RSI_' + str(n))
-        # df = df.join(RSI)
-        return RSI
+        return pd.Series(round(PosDI * 100. / (PosDI + NegDI)), name=f'RSI_{str(n)}')
 

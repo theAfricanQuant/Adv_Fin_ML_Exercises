@@ -34,7 +34,7 @@ class MultiProcessingFunctions:
 		parts = []
 		num_threads_ = min(num_threads, num_atoms)
 
-		for num in range(num_threads_):
+		for _ in range(num_threads_):
 			part = 1 + 4 * (parts[-1] ** 2 + parts[-1] + num_atoms * (num_atoms + 1.) / num_threads_)
 			part = (-1 + part ** .5) / 2.
 			parts.append(part)
@@ -69,8 +69,7 @@ class MultiProcessingFunctions:
 
 		jobs = []
 		for i in range(1, len(parts)):
-			job = {pd_obj[0]: pd_obj[1][parts[i - 1]:parts[i]], 'func': func}
-			job.update(kargs)
+			job = {pd_obj[0]: pd_obj[1][parts[i - 1]:parts[i]], 'func': func} | kargs
 			jobs.append(job)
 
 		if num_threads == 1:
@@ -105,8 +104,7 @@ class MultiProcessingFunctions:
 		""" Expand the arguments of a callback function, kargs['func'] """
 		func = kargs['func']
 		del kargs['func']
-		out = func(**kargs)
-		return out
+		return func(**kargs)
 
 	@staticmethod
 	def report_progress(job_num, num_jobs, time0, task):
@@ -116,8 +114,19 @@ class MultiProcessingFunctions:
 		msg.append(msg[1] * (1/msg[0] - 1))
 		time_stamp = str(dt.datetime.fromtimestamp(time.time()))
 
-		msg = time_stamp + ' ' + str(round(msg[0]*100, 2)) + '% '+task+' done after ' + \
-			str(round(msg[1], 2)) + ' minutes. Remaining ' + str(round(msg[2], 2)) + ' minutes.'
+		msg = (
+			(
+				(
+					f'{time_stamp} {str(round(msg[0] * 100, 2))}% '
+					+ task
+					+ ' done after '
+					+ str(round(msg[1], 2))
+				)
+				+ ' minutes. Remaining '
+			)
+			+ str(round(msg[2], 2))
+			+ ' minutes.'
+		)
 
 		if job_num < num_jobs:
 			sys.stderr.write(msg+'\r')

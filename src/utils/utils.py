@@ -136,7 +136,7 @@ def plot_tsne(dftsne, ft_num, ft_endog='is_vw'):
     g = sns.lmplot('x', 'y', dftsne.sort(ft_endog), hue=ft_endog
            ,palette=pal, fit_reg=False, size=7, legend=leg
            ,scatter_kws={'alpha':0.7,'s':100, 'edgecolor':'w', 'lw':0.4})
-    _ = g.axes.flat[0].set_title('t-SNE rep colored by {}'.format(ft_endog))
+    _ = g.axes.flat[0].set_title(f't-SNE rep colored by {ft_endog}')
 
 
 def trace_median(x):
@@ -146,9 +146,7 @@ def plot_traces(trcs, retain=2500, varnames=None):
     ''' Convenience fn: plot traces with overlaid means and values '''
     df_smry = pm.summary(trcs[-retain:], varnames=varnames)
 
-    if varnames: nrows = len(varnames)
-    else: nrows = len(trcs.varnames)
-    
+    nrows = len(varnames) if varnames else len(trcs.varnames)
     plt.style.use('seaborn-dark-palette')
     plt.rcParams['font.family'] = 'DejaVu Sans Mono'
     line_cols = ['mean','hpd_2.5','hpd_97.5']
@@ -166,7 +164,7 @@ def plot_traces(trcs, retain=2500, varnames=None):
                              va='bottom', fontsize='large', color='#AA0022')
         except: 
             pass
-        
+
     for i, mn in enumerate(df_smry['hpd_2.5']):
         try:
             ax[i,0].annotate('{:.2f}'.format(mn), xy=(mn,15), xycoords='data',
@@ -174,7 +172,7 @@ def plot_traces(trcs, retain=2500, varnames=None):
                              va='top', fontsize='medium', color='#AA0022')
         except: 
             pass
-        
+
     for i, mn in enumerate(df_smry['hpd_97.5']):
         try:
             ax[i,0].annotate('{:.2f}'.format(mn), xy=(mn,15), xycoords='data',
